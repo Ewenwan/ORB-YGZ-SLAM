@@ -73,3 +73,17 @@ Thanks the following companies/people for finantial support:
 - 天之博特
 - 视辰信息科技
 
+
+
+# 代码 修改
+     多的文件：
+     /include/Align.h    有关align部分的算法 
+          对齐算法  修改自 rpg_SVO     将像素与参考图像块对齐 配准
+     /include/Common.h
+     /include/NLSSolver.h
+     /include/NLSSolver_impl.hpp
+     /include/RobustCost.h
+     /include/SparseImageAlign.h
+     
+
+
