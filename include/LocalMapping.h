@@ -1,21 +1,17 @@
 /**
 * This file is part of ORB-SLAM2.
 *
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
-*
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+*  后端建图和优化线程
+* LocalMapping作用是将Tracking中送来的关键帧放在mlNewKeyFrame列表中；
+* 处理新关键帧，地图点检查剔除，生成新地图点，Local BA，关键帧剔除。
+* 主要工作在于维护局部地图，也就是SLAM中的Mapping。
+* 
+* Tracking线程 只是判断当前帧是否需要加入关键帧，并没有真的加入地图，
+* 因为Tracking线程的主要功能是局部定位，
+* 
+* 而处理地图中的关键帧，地图点，包括如何加入，
+* 如何删除的工作是在LocalMapping线程完成的
+* 
 */
 
 #ifndef YGZ_LOCALMAPPING_H_
@@ -28,22 +24,19 @@
 namespace ygz {
 
     class Tracking;
-
     class LoopClosing;
-
     class Map;
 
-    class KeyFrame;
-
-    class KeyFrameDatabase;
-
-    class ConfigParam;
-
-    class MapPoint;
+    class KeyFrame;//===========add =====
+    class KeyFrameDatabase;//
+    class ConfigParam;//
+    class MapPoint;//
 
     class LocalMapping {
+
+// IMU 新添加 =================================================================
     public:
-        ConfigParam *mpParams= nullptr; // IMU配置参数
+        ConfigParam *mpParams= nullptr; // IMU配置参数====
         bool mbUseIMU;
 
         std::thread *mptLocalMappingVIOInit =nullptr;   // 单目 初始化线程
@@ -54,48 +47,32 @@ namespace ygz {
 
         void DeleteBadInLocalWindow(void);
 
-        mutex mMutexVINSIniting;
+        mutex mMutexVINSIniting; // IMU锁=======
         bool mbVINSIniting;
-
         bool GetVINSIniting(void);
-
         void SetVINSIniting(bool flag);
-
         bool mbResetVINSInit;
-
         bool GetResetVINSInit(void);
-
         bool SetResetVINSInit(bool flag);
-
         void VINSInitThread(void);
-
         bool TryInitVIO(void);
-
         bool GetVINSInited(void);
-
         void SetVINSInited(bool flag);
-
         bool GetFirstVINSInited(void);
-
         void SetFirstVINSInited(bool flag);
-
         Vector3d GetGravityVec(void);
-
         double GetVINSInitScale(void) { return mnVINSInitScale; }
 
         bool GetMapUpdateFlagForTracking();
-
         void SetMapUpdateFlagInTracking(bool bflag);
-
         KeyFrame *GetMapUpdateKF();
 
         std::mutex mMutexUpdatingInitPoses;
 
         bool GetUpdatingInitPoses(void);
-
         void SetUpdatingInitPoses(bool flag);
 
-        // 初始化相关
+        //  imu初始化相关========================
     protected:
         double mnStartTime;
         bool mbFirstTry;
@@ -130,31 +107,24 @@ namespace ygz {
             mbCopyInitKFs = flag;
         }
 
+//  原 orb ==================================================================
     public:
         LocalMapping(Map *pMap, const float bMonocular, ConfigParam *pParams);
 
-        void SetLoopCloser(LoopClosing *pLoopCloser);
-
-        void SetTracker(Tracking *pTracker);
+        void SetLoopCloser(LoopClosing *pLoopCloser);// 闭环检测
+        void SetTracker(Tracking *pTracker);// 跟踪器
 
         // Main function
-        void Run();
+        void Run();// 局部建图 主函数==============
+        void InsertKeyFrame(KeyFrame *pKF); // 插入关键帧====
 
-        void InsertKeyFrame(KeyFrame *pKF);
-
-        // Thread Synch
+        // Thread Synch    线程同步=================
         void RequestStop();
-
         void RequestReset();
-
         bool Stop();
-
         void Release();
-
         bool isStopped();
-
         bool stopRequested();
-
         bool AcceptKeyFrames();
 
         void SetAcceptKeyFrames(bool flag);
@@ -177,9 +147,23 @@ namespace ygz {
         bool CheckNewKeyFrames();
 
         void ProcessNewKeyFrame();
+ // 处理新关键帧：ProcessNewKeyFrame()   
+/*a. 根据词典 计算当前关键帧Bow，便于后面三角化恢复新地图点；
+b. 将TrackLocalMap中跟踪局部地图匹配上的地图点绑定到当前关键帧
+    （在Tracking线程中只是通过匹配进行局部地图跟踪，优化当前关键帧姿态），
+    也就是在graph 中加入当前关键帧作为node，并更新edge。
+    
+    而CreateNewMapPoint()中则通过当前关键帧，在局部地图中添加与新的地图点；
 
+c. 更新加入当前关键帧之后关键帧之间的连接关系，包括更新Covisibility图和Essential图
+ （最小生成树spanning tree，共视关系好的边subset of edges from covisibility graph 
+   with high covisibility (θ=100)， 闭环边）。
+*/
+
+ // 而CreateNewMapPoint()中则通过当前关键帧，在局部地图中添加与新的地图点；
         void CreateNewMapPoints();
 
+// 对于ProcessNewKeyFrame和CreateNewMapPoints中最近添加的MapPoints进行检查剔除
         void MapPointCulling();
 
         void SearchInNeighbors();
