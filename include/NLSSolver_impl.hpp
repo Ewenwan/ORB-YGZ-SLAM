@@ -7,13 +7,13 @@
 template<int D, typename T>
 void NLLSSolver<D, T>::optimize(ModelType &model) {
     if (method_ == GaussNewton) {
-        optimizeGaussNewton(model);
+        optimizeGaussNewton(model);  // 高斯牛顿  优化====
     } else if (method_ == LevenbergMarquardt) {
-        optimizeLevenbergMarquardt(model);
+        optimizeLevenbergMarquardt(model);// LM优化====
     }
 }
 
-// Guass-Newton 优化
+// Guass-Newton 优化 , 高斯牛顿  优化====
 template<int D, typename T>
 void NLLSSolver<D, T>::optimizeGaussNewton(ModelType &model) {
     // Compute weight scale
@@ -25,7 +25,7 @@ void NLLSSolver<D, T>::optimizeGaussNewton(ModelType &model) {
     // Save the old model to rollback in case of unsuccessful update
     ModelType old_model(model);
 
-    // perform iterative estimation
+    // perform iterative estimation  迭代===========
     for (iter_ = 0; iter_ < n_iter_; ++iter_) {
         rho_ = 0;
         startIteration();
@@ -90,7 +90,7 @@ void NLLSSolver<D, T>::optimizeGaussNewton(ModelType &model) {
     }
 }
 
-// LM 优化
+// LM 优化=============================================================
 template<int D, typename T>
 void NLLSSolver<D, T>::optimizeLevenbergMarquardt(ModelType &model) {
     // Compute weight scale
@@ -214,7 +214,7 @@ void NLLSSolver<D, T>::optimizeLevenbergMarquardt(ModelType &model) {
     }
 }
 
-
+// 设置核函数 =================================
 template<int D, typename T>
 void NLLSSolver<D, T>::setRobustCostFunction(
         ScaleEstimatorType scale_estimator,
@@ -275,7 +275,7 @@ void NLLSSolver<D, T>::setRobustCostFunction(
             weight_function_.reset(new robust_cost::UnitWeightFunction());
     }
 }
-
+// 设置先验值================
 template<int D, typename T>
 void NLLSSolver<D, T>::setPrior(
         const T &prior,
