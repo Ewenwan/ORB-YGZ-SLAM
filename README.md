@@ -8,10 +8,19 @@ This is YGZ SLAM, a faster version folked from ORB-SLAM2 (see https://github.com
 If you are using ubuntu, just type "./install_dependency.sh" to install all the dependencies except pangolin.
 
 -可视化   Pangolin (for visualization): https://github.com/stevenlovegrove/Pangolin 
+
 -矩阵     Eigen3: sudo apt-get install libeigen3-dev
+
 -图优化   g2o: sudo apt-get install libcxsparse-dev libqt4-dev libcholmod3.0.6 libsuitesparse-dev qt4-qmake 
+
 -2d图像   OpenCV: sudo apt-get install libopencv-dev
+
 -日志     glog (for logging): sudo apt-get install libgoogle-glog-dev
+
+
+# 第三方库 多加了
+     一个 fast 角点库  支持 neno  sse 加速
+     一个 sophus 李群李代数库  也就是 se3 so3    使用  Eigen 实现
 
 # Compile  编译
 run "./generate.sh" to compile all the things, or follow the steps in generate.sh
