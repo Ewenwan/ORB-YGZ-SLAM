@@ -1,21 +1,6 @@
 /**
 * This file is part of ORB-SLAM2.
-*
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
-*
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+* 地图的可视化 显示 地图点 关键帧 当前相机 大小参数配置
 */
 
 #ifndef YGZ_MAPDRAWER_H_
@@ -36,30 +21,25 @@ namespace ygz {
 
         Map *mpMap;
 
-        void DrawMapPoints();
-
-        void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);
-
-        void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
-
-        void SetCurrentCameraPose(const SE3d &Tcw);
-
-        void SetReferenceKeyFrame(KeyFrame *pKF);
-
-        void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);
+        void DrawMapPoints();// 显示地图点
+        void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);//显示关键帧
+        void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);// 显示当前相机
+        void SetCurrentCameraPose(const SE3d &Tcw);// 设置当前相机位姿
+        void SetReferenceKeyFrame(KeyFrame *pKF);// 设置参考关键帧
+        void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);// 
 
     private:
 
-        float mKeyFrameSize;
-        float mKeyFrameLineWidth;
-        float mGraphLineWidth;
-        float mPointSize;
-        float mCameraSize;
-        float mCameraLineWidth;
+        float mKeyFrameSize; // 关键帧数量
+        float mKeyFrameLineWidth;// 关键帧 线长度
+        float mGraphLineWidth;// 图线长度
+        float mPointSize;// 点大小
+        float mCameraSize;// 相机大小
+        float mCameraLineWidth;// 相机线长度
 
-        SE3d mCameraPose;
+        SE3d mCameraPose; // 相机位姿  T using Sophus::SE3d;    Common.h
 
-        std::mutex mMutexCamera;
+        std::mutex mMutexCamera; // 锁===
     };
 
 } //namespace ygz
