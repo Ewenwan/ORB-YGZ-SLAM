@@ -9,12 +9,12 @@
 namespace ygz {
 
     /**
-     * @brief align a pixel with reference image patch
-     * @param[in] cur_img The current image
+     * @brief align a pixel with reference image patch   将像素与参考图像块对齐
+     * @param[in] cur_img The current image        
      * @param[in] ref_patch_with_boarder the patch with boarder, used to compute the gradient (or FEJ)
      * @param[in] ref_patch the patch in reference frame, by default is 64x64
-     * @param[in] n_iter maximum iterations
-     * @param[out] cur_px_estimate the estimated position in current image, must have an initial value
+     * @param[in] n_iter maximum iterations                 最大迭代次数
+     * @param[out] cur_px_estimate the estimated position in current image, must have an initial value 估计值
      * @return True if successful
      */
     bool Align2D(
