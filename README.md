@@ -73,13 +73,39 @@ Thanks the following companies/people for finantial support:
 - 天之博特
 - 视辰信息科技
 
+#  锁
+
+     (1)、std::mutex：该类表示普通的互斥锁, 不能递归使用。
+
+	(2)、std::timed_mutex：该类表示定时互斥锁，不能递归使用。
+	        std::time_mutex比std::mutex多了两个成员函数：
+
+	A、try_lock_for()：函数参数表示一个时间范围，在这一段时间范围之内线程如果没有获得锁则保持阻塞；
+	      如果在此期间其他线程释放了锁，则该线程可获得该互斥锁；
+	      如果超时(指定时间范围内没有获得锁)，则函数调用返回false。
+
+	B、try_lock_until()：函数参数表示一个时刻，在这一时刻之前线程如果没有获得锁则保持阻塞；
+	      如果在此时刻前其他线程释放了锁，则该线程可获得该互斥锁；如果超过指定时刻没有获得锁，
+	      则函数调用返回false。
+
+	(3)、std::recursive_mutex：该类表示递归互斥锁。递归互斥锁可以被同一个线程多次加锁，
+		以获得对互斥锁对象的多层所有权。例如，同一个线程多个函数访问临界区时都可以各自加锁，
+		执行后各自解锁。std::recursive_mutex释放互斥量时需要调用与该锁层次深度相同次数的unlock()，
+		即lock()次数和unlock()次数相同。可见，线程申请递归互斥锁时，
+		如果该递归互斥锁已经被当前调用线程锁住，则不会产生死锁。
+		此外，std::recursive_mutex的功能与 std::mutex大致相同。
+
+	(4)、std::recursive_timed_mutex：带定时的递归互斥锁。
+
+	互斥类的最重要成员函数是lock()和unlock()。在进入临界区时，执行lock()加锁操作，
+	如果这时已经被其它线程锁住，则当前线程在此排队等待。退出临界区时，执行unlock()解锁操作。
 
 
 # 代码 修改
      多的文件：
-     /include/Align.h    有关align部分的算法 
+     /include/Align.h    有关align部分的算法 =================
           对齐算法  修改自 rpg_SVO     将像素与参考图像块对齐 配准
-     /include/Common.h
+     /include/Common.h   常用的一些头文件 独立放在一起=========
      /include/NLSSolver.h
      /include/NLSSolver_impl.hpp
      /include/RobustCost.h
