@@ -1,21 +1,8 @@
 /**
 * This file is part of ORB-SLAM2.
-*
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
-*
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+* 地图 管理 关键帧 地图点
+*  添加/删除  关键帧/地图点
+* 
 */
 
 #ifndef YGZ_MAP_H_
@@ -23,16 +10,16 @@
 
 #include "Common.h"
 
+
 // 地图
 namespace ygz {
 
     class MapPoint;
-
     class KeyFrame;
 
     // Sort KeyFrames with mnId in mspKeyFrames
     class KFIdComapre {
-    public:
+    public: // 关键帧比较==== 供给
         bool operator()(const KeyFrame *kfleft, const KeyFrame *kfright) const;
     };
 
@@ -40,51 +27,41 @@ namespace ygz {
     public:
         Map();
 
-        void AddKeyFrame(KeyFrame *pKF);
+        void AddKeyFrame(KeyFrame *pKF);// 添加关键帧
+        void AddMapPoint(MapPoint *pMP);// 添加地图点
+        void EraseMapPoint(MapPoint *pMP);// 删除地图点
+        void EraseKeyFrame(KeyFrame *pKF);//删除关键帧
+        void SetReferenceMapPoints(const std::vector<MapPoint *> &vpMPs);// 参考地图点
+        void InformNewBigChange();// 地图数据 大变化  回环修正
+        int GetLastBigChangeIdx();// 上次地图数据大变化 id
 
-        void AddMapPoint(MapPoint *pMP);
+        std::vector<KeyFrame *> GetAllKeyFrames();// 得到所有关键帧
+        std::vector<MapPoint *> GetAllMapPoints();// 得到所有地图点
+        std::vector<MapPoint *> GetReferenceMapPoints();// 参考地图点
 
-        void EraseMapPoint(MapPoint *pMP);
+        long unsigned int MapPointsInMap();// 地图中地图点的数量
+        long unsigned KeyFramesInMap();// 关键帧数量
+        long unsigned int GetMaxKFid();// 最大 关键帧id
 
-        void EraseKeyFrame(KeyFrame *pKF);
+        void clear();// 清空地图==============
 
-        void SetReferenceMapPoints(const std::vector<MapPoint *> &vpMPs);
+        vector<KeyFrame *> mvpKeyFrameOrigins;// 原关键帧===
 
-        void InformNewBigChange();
-
-        int GetLastBigChangeIdx();
-
-        std::vector<KeyFrame *> GetAllKeyFrames();
-
-        std::vector<MapPoint *> GetAllMapPoints();
-
-        std::vector<MapPoint *> GetReferenceMapPoints();
-
-        long unsigned int MapPointsInMap();
-
-        long unsigned KeyFramesInMap();
-
-        long unsigned int GetMaxKFid();
-
-        void clear();
-
-        vector<KeyFrame *> mvpKeyFrameOrigins;
-
-        std::mutex mMutexMapUpdate;
+        std::mutex mMutexMapUpdate;// 地图更新锁=====
 
         // This avoid that two points are created simultaneously in separate threads (id conflict)
-        std::mutex mMutexPointCreation;
+        std::mutex mMutexPointCreation;// 地图点构建锁
 
     protected:
-        std::set<MapPoint *> mspMapPoints;
-        std::set<KeyFrame *, KFIdComapre> mspKeyFrames;
+        std::set<MapPoint *> mspMapPoints;//所有地图点
+        std::set<KeyFrame *, KFIdComapre> mspKeyFrames;//所有关键帧
 
-        std::vector<MapPoint *> mvpReferenceMapPoints;
+        std::vector<MapPoint *> mvpReferenceMapPoints;//所有参考地图点
 
         long unsigned int mnMaxKFid;
 
         // Index related to a big change in the map (loop closure, global BA)
-        int mnBigChangeIdx;
+        int mnBigChangeIdx;//   回环修正 导致地图发生大的变换
 
         std::mutex mMutexMap;
     };
