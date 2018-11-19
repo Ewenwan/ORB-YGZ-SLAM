@@ -106,8 +106,8 @@ Thanks the following companies/people for finantial support:
      /include/Align.h    有关align部分的算法 =================
           对齐算法  修改自 rpg_SVO     将像素与参考图像块对齐 配准
      /include/Common.h   常用的一些头文件 独立放在一起=========
-     /include/NLSSolver.h
-     /include/NLSSolver_impl.hpp
+     /include/NLSSolver.h            IMU 非线性最小二乘 优化求解器
+     /include/NLSSolver_impl.hpp      实现 impltation 在 NLSSolver_impl.hpp
      /include/RobustCost.h
      /include/SparseImageAlign.h
      
