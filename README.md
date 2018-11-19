@@ -12,6 +12,7 @@ If you are using ubuntu, just type "./install_dependency.sh" to install all the 
 -矩阵     Eigen3: sudo apt-get install libeigen3-dev
 
 -图优化   g2o: sudo apt-get install libcxsparse-dev libqt4-dev libcholmod3.0.6 libsuitesparse-dev qt4-qmake 
+          sudo apt-get install libsuitesparse-dev
 
 -2d图像   OpenCV: sudo apt-get install libopencv-dev
 
