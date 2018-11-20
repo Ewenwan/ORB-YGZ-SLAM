@@ -1,21 +1,83 @@
 /**
-* This file is part of ORB-SLAM2.
-*
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
-*
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+跟踪线程 深度 双目初始化位姿 运动模型 关键帧模式 重定位 局部地图跟踪 关键帧
+*This file is part of ORB-SLAM2.
+* 
+* mpMap就是我们整个位姿与地图（可以想象成ORB-SLAM运行时的那个界面世界），
+* MapPoint和KeyFrame都被包含在这个mpMap中。
+* 因此创建这三者对象（地图，地图点，关键帧）时，
+* 三者之间的关系在构造函数中不能缺少。
+* 
+* 另外，由于一个关键帧提取出的特征点对应一个地图点集，
+* 因此需要记下每个地图点的在该帧中的编号；
+* 
+* 同理，一个地图点会被多帧关键帧观测到，
+* 也需要几下每个关键帧在该点中的编号。
+* 
+* 地图点，还需要完成两个运算，第一个是在观测到该地图点的多个特征点中（对应多个关键帧），
+* 挑选出区分度最高的描述子，作为这个地图点的描述子；
+* pNewMP->ComputeDistinctiveDescriptors();
+* 
+* 第二个是更新该地图点平均观测方向与观测距离的范围，这些都是为了后面做描述子融合做准备。
+pNewMP->UpdateNormalAndDepth();
+
+* 
+* 跟踪
+* 每一帧图像 Frame ---> 提取ORB关键点特征 -----> 根据上一帧进行位置估计计算R t (或者通过全局重定位初始化位置)
+* ------> 跟踪局部地图，优化位姿 -------> 是否加入 关键帧
+* 
+* Tracking线程
+* 帧 Frame
+* 1】初始化
+*       单目初始化 MonocularInitialization()
+*       双目初始化 StereoInitialization
+* 
+* 2】相机位姿跟踪P
+*       同时跟踪和定位 同时跟踪与定位，不插入关键帧，局部建图 不工作
+*       跟踪和定位分离 mbOnlyTracking(false)  
+        位姿跟踪 TrackWithMotionModel()  TrackReferenceKeyFrame()  重定位 Relocalization()
+*   
+ a 运动模型（Tracking with motion model）跟踪   速率较快  假设物体处于匀速运动
+      用 上一帧的位姿和速度来估计当前帧的位姿使用的函数为TrackWithMotionModel()。
+      这里匹配是通过投影来与上一帧看到的地图点匹配，使用的是
+      matcher.SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, ...)。
+      
+ b 关键帧模式      TrackReferenceKeyFrame()
+     当使用运动模式匹配到的特征点数较少时，就会选用关键帧模式。即尝试和最近一个关键帧去做匹配。
+     为了快速匹配，本文利用了bag of words（BoW）来加速。
+     首先，计算当前帧的BoW，并设定初始位姿为上一帧的位姿；
+     其次，根据位姿和BoW词典来寻找特征匹配，使用函数matcher.SearchByBoW(KeyFrame *pKF, Frame &F, ...)；
+     匹配到的是参考关键帧中的地图点。
+     最后，利用匹配的特征优化位姿。
+     
+c 通过全局重定位来初始化位姿估计 Relocalization() 
+    假如使用上面的方法，当前帧与最近邻关键帧的匹配也失败了，
+    那么意味着需要重新定位才能继续跟踪。
+    重定位的入口如下： bOK = Relocalization();
+    此时，只有去和所有关键帧匹配，看能否找到合适的位置。
+    首先，计算当前帧的BOW向量，在关键帧词典数据库中选取若干关键帧作为候选。
+         使用函数如下：vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
+    其次，寻找有足够多的特征点匹配的关键帧；最后，利用RANSAC迭代，然后使用PnP算法求解位姿。这一部分也在Tracking::Relocalization() 里
+
+    
+ * 3】局部地图跟踪
+*       更新局部地图 UpdateLocalMap() 更新关键帧和 更新地图点  UpdateLocalKeyFrames()   UpdateLocalPoints
+*       搜索地图点  获得局部地图与当前帧的匹配
+*       优化位姿    最小化重投影误差  3D点-2D点对  si * pi = K * T * Pi = K * exp(f) * Pi 
+* 
+* 4】是否生成关键帧
+*       加入的条件：
+*       很长时间没有插入关键帧
+*       局部地图空闲
+*       跟踪快要跟丢
+*       跟踪地图 的 MapPoints 地图点 比例比较少
+* 
+* 5】生成关键帧
+*       KeyFrame(mCurrentFrame, mpMap, mpKeyFrameDB)
+*       对于双目 或 RGBD摄像头构造一些 MapPoints，为MapPoints添加属性
+* 
+* 进入LocalMapping线程
+* 
+* 
 */
 
 
@@ -37,7 +99,11 @@ using namespace std;
 
 namespace ygz {
 
-    SE3f Tracking::GrabImageMonoVI(const cv::Mat &im, const std::vector<IMUData> &vimu, const double &timestamp) {
+// 单目-imu 跟踪================================
+    SE3f Tracking::GrabImageMonoVI(const cv::Mat &im,
+                                                                        const std::vector<IMUData> &vimu, 
+                                                                        const double &timestamp) 
+{
         mvIMUSinceLastKF.insert(mvIMUSinceLastKF.end(), vimu.begin(), vimu.end());
         mImGray = im;
 
@@ -70,12 +136,22 @@ namespace ygz {
 //-------------------------------------------------------------------------------------------
 
     Tracking::Tracking(
-            System *pSys, ORBVocabulary *pVoc, FrameDrawer *pFrameDrawer,
-            MapDrawer *pMapDrawer, Map *pMap, KeyFrameDatabase *pKFDB, const string &strSettingPath, const int sensor,
+            System *pSys, 
+            ORBVocabulary *pVoc, 
+            FrameDrawer *pFrameDrawer,
+            MapDrawer *pMapDrawer, 
+            Map *pMap, 
+            KeyFrameDatabase *pKFDB, 
+            const string &strSettingPath, 
+            const int sensor,
             ConfigParam *pParams) :
-            mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
-            mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer *>(NULL)), mpSystem(pSys), mpViewer(NULL),
-            mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0) {
+            mState(NO_IMAGES_YET), mSensor(sensor), 
+            mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
+            mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer *>(NULL)), 
+            mpSystem(pSys), mpViewer(NULL),
+            mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), 
+           mpMap(pMap), mnLastRelocFrameId(0)
+  {
         mpParams = pParams;
 
         // Load camera parameters from settings file
@@ -204,11 +280,13 @@ namespace ygz {
                 mDepthMapFactor = 1.0f / mDepthMapFactor;
         }
 
+// 直接法 加速配准=========================================
         mpAlign = new ygz::SparseImgAlign(nLevels - 1, 1);
         mbUseIMU = mpParams->GetUseIMUFlag();
 
         int nCacheHitTh = fSettings["Tracking.CacheFeatures"];
-        if (nCacheHitTh) {
+        if (nCacheHitTh) 
+       {
             mnCacheHitTh = nCacheHitTh;
         }
     }
@@ -231,7 +309,7 @@ namespace ygz {
         mpViewer = pViewer;
     }
 
-
+// 双目跟踪==============
     SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp) {
         mImGray = imRectLeft;
         cv::Mat imGrayRight = imRectRight;
@@ -262,7 +340,7 @@ namespace ygz {
         return mCurrentFrame.mTcw;
     }
 
-
+// rgbd 跟踪=================
     SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB, const cv::Mat &imD, const double &timestamp) {
         mImGray = imRGB;
         cv::Mat imDepth = imD;
@@ -290,7 +368,7 @@ namespace ygz {
         return mCurrentFrame.mTcw;
     }
 
-
+// 单目跟踪=============
     SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp) {
         mImGray = im;
 
@@ -317,6 +395,7 @@ namespace ygz {
         return mCurrentFrame.mTcw;
     }
 
+// 具体跟踪实现函数========================================
     void Tracking::Track() {
         if (mState == NO_IMAGES_YET) {
             mState = NOT_INITIALIZED;
@@ -346,19 +425,24 @@ namespace ygz {
             }
         }
 
-        if (mState == NOT_INITIALIZED) {
+// 初始化======================================
+        if (mState == NOT_INITIALIZED) 
+        {
             mCurrentFrame.ExtractFeatures();
 
             if (mSensor == System::STEREO || mSensor == System::RGBD)
-                StereoInitialization();
+                StereoInitialization(); // 双目/深度 初始化===
             else
-                MonocularInitialization();
+                MonocularInitialization();// 单目初始化===
 
             mpFrameDrawer->Update(this);
 
             if (mState != OK)
                 return;
-        } else {
+        } 
+// 后面的跟踪==================================
+       else 
+      {
             // System is initialized. Track Frame.
             bool bOK;
 
@@ -387,7 +471,7 @@ namespace ygz {
                         bOK = TrackWithSparseAlignment(mpLocalMapper->GetFirstVINSInited() || bMapUpdated);
 
                         if (bOK == false)
-                            bOK = TrackWithMotionModel();
+                            bOK = TrackWithMotionModel(); // 跟踪上一帧
                         if (!bOK)
                             bOK = TrackReferenceKeyFrame();
                     }
