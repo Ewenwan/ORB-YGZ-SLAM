@@ -108,8 +108,10 @@ Thanks the following companies/people for finantial support:
      /include/Common.h   常用的一些头文件 独立放在一起=========
      /include/NLSSolver.h            IMU 非线性最小二乘 优化求解器
      /include/NLSSolver_impl.hpp      实现 impltation 在 NLSSolver_impl.hpp
-     /include/RobustCost.h
-     /include/SparseImageAlign.h
+     /include/RobustCost.h            鲁棒核函数  重新下降M估计???
+     /include/SparseImageAlign.h      稀疏直接法求解器
+                                       请注意SVO的直接法用了一种逆向的奇怪解法，
+                            它的雅可比是在Ref中估计而不是在Current里估计的，所以迭代过程中雅可比是不动的
      
 
 
