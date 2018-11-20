@@ -1,21 +1,6 @@
 /**
 * This file is part of ORB-SLAM2.
-*
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
-*
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+* 工程入口函数 系统类 头文件===================
 */
 
 
@@ -53,39 +38,47 @@ namespace ygz {
     class System {
     public:
 
-        // Input sensor
+        // Input sensor  枚举  输入 传感器类型
         enum eSensor {
-            MONOCULAR = 0,
-            STEREO = 1,
-            RGBD = 2
+            MONOCULAR = 0,// 单目0
+            STEREO = 1,// 双目1
+            RGBD = 2// 深度2
         };
 
     public:
 
         // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
-        System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer = true, ConfigParam *pParams = NULL);
+        System(const string &strVocFile, 
+                        const string &strSettingsFile, 
+                        const eSensor sensor,
+                        const bool bUseViewer = true, 
+                        ConfigParam *pParams = NULL);
 
         ~System();
 
         // Proccess the given stereo frame. Images must be synchronized and rectified.
         // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
         // Returns the camera pose (empty if tracking fails).
-        cv::Mat TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp);
+// 双目跟踪  返回相机位姿 ======
+        cv::Mat TrackStereo(const cv::Mat &imLeft, 
+                                                const cv::Mat &imRight, 
+                                                const double &timestamp);
 
         // Process the given rgbd frame. Depthmap must be registered to the RGB frame.
         // Input image: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
         // Input depthmap: Float (CV_32F).
         // Returns the camera pose (empty if tracking fails).
+// 深度 跟踪  返回相机位姿====
         cv::Mat TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp);
 
         // Proccess the given monocular frame
         // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
         // Returns the camera pose (empty if tracking fails).
+// 单目 跟踪  返回相机位姿========
         cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
         /**
-         *@brief Track Monocular with IMU
+         *@brief Track Monocular with IMU   单目IMU跟踪======
          * @param[in] im input image
          * @param[in] vimu the imu measurements from last image frame
          * @param[in] timestamp time
@@ -95,17 +88,17 @@ namespace ygz {
 
 
         // This stops local mapping thread (map building) and performs only camera tracking.
-        void ActivateLocalizationMode();
+        void ActivateLocalizationMode();// 定位 + 跟踪 模式
 
         // This resumes local mapping thread and performs SLAM again.
-        void DeactivateLocalizationMode();
+        void DeactivateLocalizationMode();//   定位 +建图 + 跟踪 模式
 
         // Returns true if there have been a big map change (loop closure, global BA)
         // since last call to this function
-        bool MapChanged();
+        bool MapChanged(); // 地图发生了大的变换
 
         // Reset the system (clear map)
-        void Reset();
+        void Reset();// 重置====
 
         // All threads will be requested to finish.
         // It waits until all threads have finished.
@@ -133,7 +126,7 @@ namespace ygz {
         // save keyframe trajectory
         void SaveKeyFrameTrajectoryNavState(const string &filename);
 
-        // TODO: Save/Load functions
+        // TODO: Save/Load functions    地图载入保存函数=================
         // SaveMap(const string &filename);
         // LoadMap(const string &filename);
 
@@ -159,55 +152,61 @@ namespace ygz {
     private:
 
         // Input sensor
-        eSensor mSensor;
+        eSensor mSensor;// enum 枚举变量  输入相机类型 单目 双目 深度
 
         // ORB vocabulary used for place recognition and feature matching.
+// 词典对象指针 用于 地点识别  特征匹配 orb特征==
         ORBVocabulary *mpVocabulary =nullptr;
 
         // KeyFrame database for place recognition (relocalization and loop detection).
+// 关键帧 数据库 对象指针  用于 地点识别 定位 回环检测====
         KeyFrameDatabase *mpKeyFrameDatabase =nullptr;
 
         // Map structure that stores the pointers to all KeyFrames and MapPoints.
+// 地图对象指针  存储 关键帧 和 地图点====
         Map *mpMap =nullptr;
 
         // Tracker. It receives a frame and computes the associated camera pose.
         // It also decides when to insert a new keyframe, create some new MapPoints and
         // performs relocalization if tracking fails.
+// 跟踪对象 指针 ========
         Tracking *mpTracker =nullptr;
 
         // Local Mapper. It manages the local map and performs local bundle adjustment.
+// 建图对象 指针 =====
         LocalMapping *mpLocalMapper =nullptr;
 
         // Loop Closer. It searches loops with every new keyframe. If there is a loop it performs
         // a pose graph optimization and full bundle adjustment (in a new thread) afterwards.
+// 回环检测对象指针 ======
         LoopClosing *mpLoopCloser =nullptr;
 
         // The viewer draws the map and the current camera pose. It uses Pangolin.
-        Viewer *mpViewer =nullptr;
+        Viewer *mpViewer =nullptr;// 可视化对象指针 ======
 
-        FrameDrawer *mpFrameDrawer =nullptr;
-        MapDrawer *mpMapDrawer =nullptr;
+        FrameDrawer *mpFrameDrawer =nullptr;// 显示帧对象 指针 =====
+        MapDrawer *mpMapDrawer =nullptr;// 显示地图对象 指针 ===
 
         // System threads: Local Mapping, Loop Closing, Viewer.
         // The Tracking thread "lives" in the main execution thread that creates the System object.
-        std::thread *mptLocalMapping =nullptr;
-        std::thread *mptLoopClosing =nullptr;
-        std::thread *mptViewer =nullptr;
+        std::thread *mptLocalMapping =nullptr;// 建图线程         指针
+        std::thread *mptLoopClosing =nullptr;   // 闭环检测线程  指针
+        std::thread *mptViewer =nullptr;              // 可视化线程      指针
 
-        // Reset flag
-        std::mutex mMutexReset;
+        // Reset flag 线程重启标志 ====
+        std::mutex mMutexReset;// 互斥量   保护 mbReset 变量
         bool mbReset =false;
 
-        // Change mode flags
-        std::mutex mMutexMode;
-        bool mbActivateLocalizationMode;
-        bool mbDeactivateLocalizationMode;
+        // Change mode flags   系统模式=
+        std::mutex mMutexMode;// 互斥量=
+        bool mbActivateLocalizationMode;// 跟踪 + 定位
+        bool mbDeactivateLocalizationMode;//   跟踪 + 定位+ 建图
 
-        // Tracking state
+        // Tracking state 跟踪线程 状态===
         int mTrackingState;
-        std::vector<MapPoint *> mTrackedMapPoints;
-        std::vector<cv::KeyPoint> mTrackedKeyPoints;
-        std::mutex mMutexState;
+        std::vector<MapPoint *> mTrackedMapPoints;// 当前帧跟踪到的地图点 3d
+        std::vector<cv::KeyPoint> mTrackedKeyPoints;// 2d关键点
+        std::mutex mMutexState;// 互斥量=
     };
 
 }// namespace ygz
