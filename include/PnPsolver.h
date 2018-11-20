@@ -1,51 +1,46 @@
 /**
 * This file is part of ORB-SLAM2.
-* This file is a modified version of EPnP <http://cvlab.epfl.ch/EPnP/index.php>, see FreeBSD license below.
-*
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
-*
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
-*/
+ 2d-3d点对求解变换
+随机采样 矩阵线性方程式 求解，还有可以使用G2O优化式求解
+这个PnP Solver 只在重定位里用了
 
-/**
-* Copyright (c) 2009, V. Lepetit, EPFL
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*
-* 1. Redistributions of source code must retain the above copyright notice, this
-*    list of conditions and the following disclaimer.
-* 2. Redistributions in binary form must reproduce the above copyright notice,
-*    this list of conditions and the following disclaimer in the documentation
-*    and/or other materials provided with the distribution.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-* ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*
-* The views and conclusions contained in the software and documentation are those
-* of the authors and should not be interpreted as representing official policies,
-*   either expressed or implied, of the FreeBSD Project
+//这里的pnp求解用的是EPnP的算法。
+// 参考论文：EPnP:An Accurate O(n) Solution to the PnP problem
+// https://en.wikipedia.org/wiki/Perspective-n-Point
+// http://docs.ros.org/fuerte/api/re_vision/html/classepnp.html
+// 如果不理解，可以看看中文的："摄像机位姿的高精度快速求解" "摄像头位姿的加权线性算法"
+
+// PnP求解：已知世界坐标系下的3D点与图像坐标系对应的2D点，
+// 求解相机的外参(R t)，即从世界坐标系到相机坐标系的变换。
+// 而EPnP的思想是：
+// 将世界坐标系所有的3D点用四个虚拟的控制点来表示，
+// 将图像上对应的特征点转化为相机坐标系下的四个控制点
+// 根据世界坐标系下的四个控制点与相机坐标系下对应的
+// 四个控制点（与世界坐标系下四个控制点有相同尺度）即可恢复出(R t)
+
+
+//                                   |x|
+//   |u|   |fx r  u0||r11 r12 r13 t1||y|
+// s |v| = |0  fy v0||r21 r22 r23 t2||z|
+//   |1|   |0  0  1 ||r32 r32 r33 t3||1|
+
+// step1:用四个控制点来表达所有的3D点
+// p_w = sigma(alphas_j * pctrl_w_j), j从0到4
+// p_c = sigma(alphas_j * pctrl_c_j), j从0到4
+// sigma(alphas_j) = 1,  j从0到4
+
+// step2:根据针孔投影模型
+// s * u = K * sigma(alphas_j * pctrl_c_j), j从0到4
+
+// step3:将step2的式子展开, 消去s
+// sigma(alphas_j * fx * Xctrl_c_j) + alphas_j * (u0-u)*Zctrl_c_j = 0
+// sigma(alphas_j * fy * Xctrl_c_j) + alphas_j * (v0-u)*Zctrl_c_j = 0
+
+// step4:将step3中的12未知参数（4个控制点*3维参考点坐标）提成列向量
+// Mx = 0,计算得到初始的解x后可以用Gauss-Newton来提纯得到四个相机坐标系的控制点
+
+// step5:根据得到的p_w和对应的p_c，最小化重投影误差即可求解出R t
+
 */
 
 #ifndef YGZ_PNPSOLVER_H_
@@ -63,21 +58,31 @@ namespace ygz {
         PnPsolver(const Frame &F, const vector<MapPoint *> &vpMapPointMatches);
 
         ~PnPsolver();
-
-        void SetRansacParameters(double probability = 0.99, int minInliers = 8, int maxIterations = 300, int minSet = 4,
-                                 float epsilon = 0.4,
-                                 float th2 = 5.991);
+        
+  // 设置RANSAC迭代的参数
+        void SetRansacParameters(double probability = 0.99,
+                                                               int minInliers = 8, 
+                                                               int maxIterations = 300,
+                                                               int minSet = 4,
+                                                               float epsilon = 0.4,
+                                                               float th2 = 5.991);
 
         cv::Mat find(vector<bool> &vbInliers, int &nInliers);
 
-        cv::Mat iterate(int nIterations, bool &bNoMore, vector<bool> &vbInliers, int &nInliers);
+        cv::Mat iterate(int nIterations, bool &bNoMore, 
+                                     vector<bool> &vbInliers, int &nInliers);
 
     private:
-
+// 通过之前求解的(R t)检查哪些3D-2D点对属于inliers
         void CheckInliers();
 
         bool Refine();
 
+// number_of_correspondences为RANSAC每次PnP求解时时3D点和2D点匹配对数
+// RANSAC需要很多次，maximum_number_of_correspondences为匹配对数最大值
+// 这个变量用于决定pws us alphas pcs容器的大小，因此只能逐渐变大不能减小
+// 如果maximum_number_of_correspondences之前设置的过小，则重新设置，
+// 并重新初始化pws us alphas pcs的大小
         // Functions from the original EPnP code
         void set_maximum_number_of_correspondences(const int n);
 
@@ -98,6 +103,11 @@ namespace ygz {
 
         void choose_control_points(void);
 
+// 求解四个控制点的系数alphas
+// (a2 a3 a4)' = inverse(cws2-cws1 cws3-cws1 cws4-cws1)*(pws-cws1)，a1 = 1-a2-a3-a4
+// 每一个3D控制点，都有一组alphas与之对应
+// cws1 cws2 cws3 cws4为四个控制点的坐标
+// pws为3D参考点的坐标
         void compute_barycentric_coordinates(void);
 
         void fill_M(CvMat *M, const int row, const double *alphas, const double u, const double v);
