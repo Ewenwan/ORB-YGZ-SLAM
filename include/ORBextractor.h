@@ -1,6 +1,6 @@
 /**
 * This file is part of ORB-SLAM2.
-* 
+*  扩展特征点类型 原版 ORB-SLAM、SVO里的网格FAST、类DSO的变网格FAST ======
 *作者对opencv中的orb源码进行了修改，将特征进行四叉树均匀化
 *  2d 上下左右四点 四叉 
 * 特征提取也就是对图像进行一定的操作，也就是对像素点进行一些操作，
@@ -88,7 +88,7 @@ namespace ygz {
             return nlevels;// 返回 金字塔层数======
         }
 
-        float inline GetScaleFactor() {====
+        float inline GetScaleFactor() {
             return scaleFactor;// 返回尺度因子
         }
 
