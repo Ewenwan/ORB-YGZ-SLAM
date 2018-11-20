@@ -4,6 +4,16 @@ This is YGZ SLAM, a faster version folked from ORB-SLAM2 (see https://github.com
      结合 SVO的直接法跟踪 来加速 orb-slam2中的特征匹配  3倍加速
      同时支持 单目-惯性SLAM MVI-SLAM
 
+# 图漾RGBD相机 运行
+	# 编译
+	cd build
+	cmake ..
+	make
+	# 运行
+	 cd ../Examples/RGB-D/
+	 ./ty_rgbd ../../Vocabulary/ORBvoc.bin ./my_rgbd_ty_api_adj.yaml
+
+
 # Dependency  软件依赖=======
 If you are using ubuntu, just type "./install_dependency.sh" to install all the dependencies except pangolin.
 
