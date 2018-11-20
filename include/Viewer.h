@@ -1,21 +1,6 @@
 /**
 * This file is part of ORB-SLAM2.
-*
-* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
-* For more information see <https://github.com/raulmur/ORB_SLAM2>
-*
-* ORB-SLAM2 is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* ORB-SLAM2 is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+ 可视化类，显示地图点、关键帧、当前相机位置、上次处理的帧、当前帧看到的地图点
 */
 
 
@@ -30,51 +15,48 @@
 // 可视化类，基本没动
 namespace ygz {
 
-    class Tracking;
-
-    class FrameDrawer;
-
-    class MapDrawer;
-
-    class System;
+    class Tracking;// 跟踪器
+    class FrameDrawer;// 帧显示器
+    class MapDrawer;   // 地图点显示器
+    class System;            // 系统对象
 
     class Viewer {
     public:
-        Viewer(System *pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking,
-               const string &strSettingPath);
+// 类构造函数====================
+        Viewer(System *pSystem, 
+                       FrameDrawer *pFrameDrawer, 
+                       MapDrawer *pMapDrawer, 
+                       Tracking *pTracking,
+                       const string &strSettingPath);
 
         // Main thread function. Draw points, keyframes, the current camera pose and the last processed
         // frame. Drawing is refreshed according to the camera fps. We use Pangolin.
-        void Run();
+        void Run(); // 可视化主线程函数========
+        // 显示地图点、关键帧、当前相机位置、上次处理的帧、当前帧看到的地图点=====
 
-        void RequestFinish();
-
-        void RequestStop();
-
-        bool isFinished();
-
-        bool isStopped();
-
-        void Release();
+        void RequestFinish();// 请求完成
+        void RequestStop();// 请求结束
+        bool isFinished();// 是否完成
+        bool isStopped();//是否停止
+        void Release();// 释放
 
     private:
 
-        bool Stop();
-
-        System *mpSystem;
-        FrameDrawer *mpFrameDrawer;
-        MapDrawer *mpMapDrawer;
-        Tracking *mpTracker;
+        bool Stop();// 停止
+        System *mpSystem;// 系统对象
+        FrameDrawer *mpFrameDrawer;//帧显示器
+        MapDrawer *mpMapDrawer;// 地图点显示器
+        Tracking *mpTracker;// 跟踪器
 
         // 1/fps in ms
-        double mT;
-        float mImageWidth, mImageHeight;
+        double mT; // 没帧 时间   帧率导数 ===
+        float mImageWidth, mImageHeight;// 图像尺寸
 
-        float mViewpointX, mViewpointY, mViewpointZ, mViewpointF;
+        float mViewpointX, mViewpointY, mViewpointZ, mViewpointF;// 视点坐标
 
-        bool CheckFinish();
+        bool CheckFinish();// 检测是否完成
 
-        void SetFinish();
+        void SetFinish();//设置完成
 
         bool mbFinishRequested;
         bool mbFinished;
