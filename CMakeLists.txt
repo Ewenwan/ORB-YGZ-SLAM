@@ -62,6 +62,9 @@ ${PROJECT_SOURCE_DIR}/Thirdparty/sophus
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
 ${CHOLMOD_INCLUDE_DIR}
+
+${PROJECT_SOURCE_DIR}/Examples/RGB-D/ty/common/include # 图漾头文件===============
+
 )
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -110,41 +113,56 @@ ${LAPACK_LIBRARIES}
 ${GLOG_LIBRARY}
 )
 
+set(TY_TARGET_LIB tycam) # 图漾相机库====================
+set(COMMON_SOURCES
+${PROJECT_SOURCE_DIR}/Examples/RGB-D/ty/common/MatViewer.cpp
+${PROJECT_SOURCE_DIR}/Examples/RGB-D/ty/common/PointCloudViewer.cpp
+    )
+add_library(sample_common STATIC ${COMMON_SOURCES}) #=====================
+
 # Build examples
 ################# Datasets ####################
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
 
-add_executable(rgbd_tum
-Examples/RGB-D/rgbd_tum.cc)
-target_link_libraries(rgbd_tum ${PROJECT_NAME} ${OpenCV_LIBS} )
+#add_executable(rgbd_tum
+#Examples/RGB-D/rgbd_tum.cc)
+#target_link_libraries(rgbd_tum ${PROJECT_NAME} ${OpenCV_LIBS} )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo)
+# rgb-d 相机示例   图漾 ====
+add_executable(rgbd_ty
+Examples/RGB-D/my_rgbd.cc)
+target_link_libraries(rgbd_ty 
+${PROJECT_NAME}
+sample_common 
+${TY_TARGET_LIB}
+)
 
-add_executable(stereo_kitti
-Examples/Stereo/stereo_kitti.cc)
-target_link_libraries(stereo_kitti ${PROJECT_NAME} ${OpenCV_LIBS})
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo)
 
-add_executable(stereo_euroc
-Examples/Stereo/stereo_euroc.cc)
-target_link_libraries(stereo_euroc ${PROJECT_NAME} ${OpenCV_LIBS})
+#add_executable(stereo_kitti
+#Examples/Stereo/stereo_kitti.cc)
+#target_link_libraries(stereo_kitti ${PROJECT_NAME} ${OpenCV_LIBS})
+
+#add_executable(stereo_euroc
+#Examples/Stereo/stereo_euroc.cc)
+#target_link_libraries(stereo_euroc ${PROJECT_NAME} ${OpenCV_LIBS})
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
 
-add_executable(mono_tum
-Examples/Monocular/mono_tum.cc)
-target_link_libraries(mono_tum ${PROJECT_NAME} ${OpenCV_LIBS})
+#add_executable(mono_tum
+#Examples/Monocular/mono_tum.cc)
+#target_link_libraries(mono_tum ${PROJECT_NAME} ${OpenCV_LIBS})
 
-add_executable(mono_kitti
-Examples/Monocular/mono_kitti.cc)
-target_link_libraries(mono_kitti ${PROJECT_NAME} ${OpenCV_LIBS})
+#add_executable(mono_kitti
+#Examples/Monocular/mono_kitti.cc)
+#target_link_libraries(mono_kitti ${PROJECT_NAME} ${OpenCV_LIBS})
 
-add_executable(mono_euroc
-Examples/Monocular/mono_euroc.cc)
-target_link_libraries(mono_euroc ${PROJECT_NAME} ${OpenCV_LIBS})
+#add_executable(mono_euroc
+#Examples/Monocular/mono_euroc.cc)
+#target_link_libraries(mono_euroc ${PROJECT_NAME} ${OpenCV_LIBS})
 
 add_executable(mono_euroc_vins
 Examples/Monocular/mono_euroc_vins.cc)
 target_link_libraries(mono_euroc_vins ${PROJECT_NAME} ${OpenCV_LIBS})
-
