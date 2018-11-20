@@ -1,3 +1,8 @@
+/*
+ 稀疏直接法求解器
+ 请注意SVO的直接法用了一种逆向的奇怪解法，
+  它的雅可比是在Ref中估计而不是在Current里估计的，所以迭代过程中雅可比是不动的
+*/
 #ifndef YGZ_SPARSE_IMAGE_ALIGN_
 #define YGZ_SPARSE_IMAGE_ALIGN_
 
